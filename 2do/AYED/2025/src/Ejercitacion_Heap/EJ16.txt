@@ -1,8 +1,0 @@
-16.- La operación que agrega un elemento a la heap que tiene n elementos, en el peor caso es de...
-    (a) O(n)
-    (b) O(n log n)
-    (c) O(log n)
-    (d) Ninguna de las otras opciones
-
-Res.:
-    (c) O(log n)

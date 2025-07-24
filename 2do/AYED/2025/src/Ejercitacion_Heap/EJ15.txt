@@ -1,3 +1,0 @@
-15.- ¿Siempre se puede decir que un árbol binario lleno es una Heap?
-
-Res.: No. Además de ser mínimamente completo, debe estar parcialmente ordenado (min-heap o max-heap).

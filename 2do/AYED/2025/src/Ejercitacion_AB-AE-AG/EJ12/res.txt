@@ -1,3 +1,0 @@
-12.- ¿Cuál de los siguientes árboles binarios tiene su recorrido inorden BCAD y preorden ABCD?
-
-Res.: (D) cumple con los recorridos
