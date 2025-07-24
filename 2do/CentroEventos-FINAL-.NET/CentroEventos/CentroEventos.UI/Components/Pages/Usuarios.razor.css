@@ -1,0 +1,237 @@
+﻿/* ==================== Global ==================== */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f6f8;
+    margin: 0;
+    padding: 20px;
+    color: #333;
+}
+
+/* ==================== Título ==================== */
+
+h2 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+/* ==================== Botones generales ==================== */
+
+button.accion {
+    background-color: #6c63ff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: background-color 0.2s ease;
+}
+
+button.accion:hover {
+    background-color: #4e54c8;
+}
+
+/* ==================== Tabla ==================== */
+
+.tabla-usuarios {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tabla-usuarios th,
+.tabla-usuarios td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid #ececec;
+}
+
+.tabla-usuarios thead {
+    background-color: #6c63ff;
+    color: white;
+}
+
+.tabla-usuarios tbody tr:hover {
+    background-color: #f2f2f2;
+}
+
+/* ==================== Diálogos (comunes) ==================== */
+
+.dialogo-contenedor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    overflow: auto; /* ← permite scroll si el contenido se pasa */
+    padding: 20px;   /* ← evita que el contenido quede pegado al borde */
+}
+
+.dialogo-contenido {
+    width: 100%;
+    max-width: 420px;
+    max-height: 90vh; /* ← limita la altura máxima */
+    overflow-y: auto; /* ← scroll interno si se pasa */
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    gap: 12px;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* ==================== Inputs ==================== */
+
+.dialogo-contenido input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.dialogo-contenido input:focus {
+    border-color: #6c63ff;
+    outline: none;
+}
+
+/* ==================== Botones dentro de diálogos ==================== */
+
+.dialogo-contenido button {
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    margin-top: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    box-sizing: border-box;
+}
+
+/* Alta y Modificar */
+.dialogo-contenido button:first-of-type {
+    background-color: #6c63ff;
+    color: white;
+}
+.dialogo-contenido button:first-of-type:hover {
+    background-color: #4e54c8;
+}
+
+/* Cancelar */
+.dialogo-contenido button:last-of-type {
+    background-color: #dcdcdc;
+    color: #2c3e50;
+}
+.dialogo-contenido button:last-of-type:hover {
+    background-color: #bfbfbf;
+}
+
+/* ==================== Diálogo de Baja ==================== */
+
+.baja-button:first-of-type {
+    background-color: #e74c3c;
+    color: white;
+}
+.baja-button:first-of-type:hover {
+    background-color: #c0392b;
+}
+
+.baja-button:last-of-type {
+    background-color: #bdc3c7;
+    color: #2c3e50;
+}
+.baja-button:last-of-type:hover {
+    background-color: #95a5a6;
+}
+
+.baja-h3 {
+    color: #c0392b;
+    font-size: 1.1rem;
+    margin: 0 0 16px 0;
+    text-align: center;
+    line-height: 1.4;
+    word-break: break-word; /* ← fuerza el corte de palabra larga */
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+/* ==================== Alertas ==================== */
+
+.alert-danger {
+    color: #c0392b;
+    background-color: #fdecea;
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+/* ==================== Animaciones ==================== */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tabla-usuarios th:nth-child(1), /* Nombre */
+.tabla-usuarios td:nth-child(1) {
+    width: 15%;
+}
+
+.tabla-usuarios th:nth-child(2), /* Apellido */
+.tabla-usuarios td:nth-child(2) {
+    width: 15%;
+}
+
+.tabla-usuarios th:nth-child(3), /* Email */
+.tabla-usuarios td:nth-child(3) {
+    width: 30%;
+}
+
+.columna-accion {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px;
+}
+
+.columna-accion button {
+    font-size: medium;
+}
+
+.checkbox-permisos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.checkbox-permisos label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+}

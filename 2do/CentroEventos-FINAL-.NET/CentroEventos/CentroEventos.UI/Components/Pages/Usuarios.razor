@@ -1,0 +1,284 @@
+@inject IServicioSesion Sesion
+@inject IRepositorioUsuario RepoUsuarios
+@inject UsuarioAltaUseCase UserAlta
+@using CentroEventos.Aplicacion.Enums
+@using CentroEventos.Aplicacion.UseCases.Usuario
+@using CentroEventos.Aplicacion.Validators.Usuario
+@inject UsuarioAltaCampos UsuarioAltaCampos
+@inject UsuarioBajaUseCase UserBaja
+@inject UsuarioModificarUseCase UserMod
+@rendermode InteractiveServer
+
+@page "/usuarios"
+
+@if (_logueado && _isUserAdmin && _usuarioAdministrado != null)
+{
+    <h2 style="font-weight: bold">Sección Gestión de Usuarios</h2>
+    if (_usuarioAlta)
+    {
+        <button @onclick="MostrarDialogoAlta" class="accion">+ Nuevo usuario</button>
+        @if (_visibleDialogoAlta)
+        {
+            <div class="dialogo-contenedor">
+                <div class="dialogo-contenido">
+                    <h3>Nuevo usuario</h3>
+                    <div class="login-caja">
+                        <input type="text" placeholder="Nombre" @bind="_usuarioAdministrado.Nombre"/>
+                        <input type="text" placeholder="Apellido" @bind="_usuarioAdministrado.Apellido"/>
+                        <input type="email" placeholder="Email" @bind="_usuarioAdministrado.Email"/>
+                        <input type="password" placeholder="Contraseña" @bind="_usuarioAdministrado.Contraseña"/>
+                        <button @onclick="AltaUsuario">Aceptar</button>
+                        <button @onclick="CerrarDialogoAlta">Cancelar</button>
+                    </div>
+                    @if (_alertVisible)
+                    {
+                        <p style="margin-top: 15px; font-size: small" class="alert-danger">@_alertText</p>
+                    }
+                </div>
+            </div>
+        }
+    }
+        <table class="tabla-usuarios">
+            <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Email</th>
+                <th>Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (_listaUsuarios != null)
+            {
+                foreach (var u in _listaUsuarios)
+                {
+                    <tr>
+                        <td>@u.Nombre</td>
+                        <td>@u.Apellido</td>
+                        <td>@u.Email</td>
+                        <td class="columna-accion">
+                            @if (_usuarioModificacion)
+                            {
+                                <button @onclick="@(() => MostrarDialogoMod(u.Id))" style="margin-right: 20px" class="accion">Modificar</button>
+                                if (_idUsuarioAMod == u.Id)
+                                {
+                                    <div class="dialogo-contenedor">
+                                        <div class="dialogo-contenido">
+                                            <h3>Modificar usuario</h3>
+                                            <p>Nombre</p>
+                                            <input type="text" @bind="_usuarioAdministrado.Nombre"/>
+                                            <p>Apellido</p>
+                                            <input type="text" @bind="_usuarioAdministrado.Apellido"/>
+                                            <p>Email</p>
+                                            <input type="text" @bind="_usuarioAdministrado.Email"/>
+                                            <p>Contraseña</p>
+                                            <input type="text" @bind="_usuarioAdministrado.Contraseña"/>
+                                            <p>Permisos</p>
+                                            <div class="checkbox-permisos">
+                                                @foreach (var permiso in _todosLosPermisos)
+                                                {
+                                                    <label>
+                                                        <input type="checkbox"
+                                                               checked="@_usuarioAdministrado.Permisos.Contains(permiso)"
+                                                               disabled="@RepoUsuarios.EsAdministrador(_usuarioAdministrado)"
+                                                               @onchange="@(e => CambiarPermiso(_usuarioAdministrado, permiso, (bool)(e.Value ?? false)))"/>
+                                                        @permiso.ToString()
+                                                    </label>
+                                                }
+                                            </div>
+                                            <button @onclick="@(() => ModificarUsuario(_usuarioAdministrado))">Aceptar</button>
+                                            <button @onclick="CerrarDialogoMod">Cancelar</button>
+                                            @if (_alertVisible)
+                                            {
+                                                <p style="margin-top: 15px; font-size: small" class="alert-danger">@_alertText</p>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            @if (_usuarioBaja)
+                            {
+                                <button @onclick="@(() => MostrarDialogoBaja(u.Id))" style="margin-right: 20px; background-color: darkred" class="accion">Eliminar</button>
+                                if (_idUsuarioAEliminar == u.Id)
+                                {
+                                    <div class="dialogo-contenedor">
+                                        <div class="dialogo-contenido">
+                                            <h3 class="baja-h3">¿Estás seguro de eliminar al usuario @u.Nombre @u.Apellido?</h3>
+                                            <button class="baja-button" @onclick="@(() => BajaUsuario(u.Id))">Aceptar</button>
+                                            <button class="baja-button" @onclick="CerrarDialogoBaja">Cancelar</button>
+
+                                            @if (_alertVisible)
+                                            {
+                                                <p style="margin-top: 15px; font-size: small" class="alert-danger">@_alertText</p>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+
+                        </td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+}
+else
+{
+    <div class="container">
+        <h1 class="alert-danger">Error.</h1>
+        <p class="text-danger">No posees autenticación o los permisos necesarios para acceder a esta sección.</p>
+    </div>
+}
+
+@code {
+    private bool _logueado;
+    private bool _isUserAdmin;
+    private bool _usuarioAlta;
+    private bool _usuarioBaja;
+    private bool _usuarioModificacion;
+    IOrderedEnumerable<Usuario>? _listaUsuarios;
+    private Usuario? _usuarioAdministrado;
+    private bool _visibleDialogoAlta;
+    private bool _alertVisible;
+    private String _alertText = "";
+    private int? _idUsuarioAEliminar;
+    private Usuario? _usuarioActual;
+    private int? _idUsuarioAMod;
+    private List<Permiso> _todosLosPermisos = Enum.GetValues(typeof(Permiso)).Cast<Permiso>().ToList();
+
+    protected override void OnInitialized()
+    {
+        _usuarioActual = Sesion.GetSesion();
+        _logueado = Sesion.HaySesion();
+        _isUserAdmin = _usuarioActual?.Permisos.Exists(p => p.Equals(Permiso.UsuarioAlta) || p.Equals(Permiso.UsuarioBaja) || p.Equals(Permiso.UsuarioModificacion)) ?? false;
+        _usuarioAlta = _usuarioActual?.Permisos.Exists(p => p.Equals(Permiso.UsuarioAlta)) ?? false;
+        _usuarioModificacion = _usuarioActual?.Permisos.Exists(p => p.Equals(Permiso.UsuarioModificacion)) ?? false;
+        _usuarioBaja = _usuarioActual?.Permisos.Exists(p => p.Equals(Permiso.UsuarioBaja)) ?? false;
+        _listaUsuarios = RepoUsuarios.ListarUsuarios().OrderBy(a => a.Nombre);
+        _usuarioAdministrado = new Usuario();
+    }
+
+    void MostrarDialogoAlta()
+    {
+        _alertVisible = false;
+        _visibleDialogoAlta = true;
+        StateHasChanged();
+    }
+    void CerrarDialogoAlta()
+    {
+        _alertVisible = false;
+        _visibleDialogoAlta = false;
+        _listaUsuarios = RepoUsuarios.ListarUsuarios().OrderBy(a => a.Nombre);
+        _usuarioAdministrado = new Usuario();
+        StateHasChanged();
+    }
+    void AltaUsuario()
+    {
+        try
+        {
+            if (_usuarioAdministrado != null) 
+                UserAlta.Ejecutar(_usuarioAdministrado, UsuarioAltaCampos);
+            CerrarDialogoAlta();
+            StateHasChanged();
+
+        }
+        catch (Exception e)
+        {
+            _alertText = e.Message;
+            _alertVisible = true;
+        }
+    }
+
+    void MostrarDialogoBaja(int usuarioId)
+    {
+        _alertVisible = false;
+        _idUsuarioAEliminar = usuarioId;
+        StateHasChanged();
+    }
+    
+    void CerrarDialogoBaja()
+    {
+        _alertVisible = false;
+        _idUsuarioAEliminar = null;
+        _listaUsuarios = RepoUsuarios.ListarUsuarios().OrderBy(a => a.Nombre);
+        StateHasChanged();
+    }
+    
+    void BajaUsuario(int uId)
+    {
+        try
+        {
+            if (_usuarioActual != null)
+                UserBaja.Ejecutar(uId, _usuarioActual);
+            CerrarDialogoBaja();
+            StateHasChanged();
+        } catch (Exception e)
+        {
+            _alertText = e.Message;
+            _alertVisible = true;
+        }
+    }
+    
+    void MostrarDialogoMod(int usuarioId)
+    {
+        _alertVisible = false;
+        _idUsuarioAMod = usuarioId;
+
+        if (_listaUsuarios != null)
+        {
+            var usuarioOriginal = _listaUsuarios.FirstOrDefault(u => u.Id == usuarioId);
+            if (usuarioOriginal != null)
+            {
+                _usuarioAdministrado = new Usuario
+                {
+                    Id = usuarioOriginal.Id,
+                    Nombre = usuarioOriginal.Nombre,
+                    Apellido = usuarioOriginal.Apellido,
+                    Email = usuarioOriginal.Email,
+                    Permisos = new List<Permiso>(usuarioOriginal.Permisos)
+                };
+            }
+        }
+
+        StateHasChanged();
+    }
+    
+    void CerrarDialogoMod()
+    {
+        _alertVisible = false;
+        _idUsuarioAMod = null;
+        _listaUsuarios = RepoUsuarios.ListarUsuarios().OrderBy(a => a.Nombre);
+        StateHasChanged();
+    }
+    
+    void CambiarPermiso(Usuario u, Permiso permiso, bool estaMarcado)
+    {
+        if (estaMarcado)
+        {
+            if (!u.Permisos.Contains(permiso))
+                u.Permisos.Add(permiso);
+        }
+        else
+        {
+            if (u.Permisos.Contains(permiso))
+                u.Permisos.Remove(permiso);
+        }
+        StateHasChanged();
+    }
+
+    void ModificarUsuario(Usuario u)
+    {
+        try
+        {
+            if (_usuarioActual != null)
+                UserMod.Ejecutar(u, _usuarioActual);
+            CerrarDialogoMod();
+            StateHasChanged();
+        } catch (Exception e)
+        {
+            _alertText = e.Message;
+            _alertVisible = true;
+        }
+    }
+}

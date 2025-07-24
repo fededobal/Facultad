@@ -1,0 +1,292 @@
+﻿@page "/personas"
+@using CentroEventos.Aplicacion.Enums
+@using CentroEventos.Aplicacion.UseCases.Persona
+@rendermode InteractiveServer
+@inject IServicioSesion Sesion;
+@inject AltaPersonaUseCase AltaPersonaUseCase;
+@inject BajaPersonaUseCase BajaPersonaUseCase;
+@inject ListarPersonasUseCase ListarPersonas;
+@inject ModificarPersonaUseCase ModPersona;
+@inject IRepositorioPersona RepositorioPersona;
+
+<PageTitle>CentroEventos | Personas</PageTitle>
+
+@if (_logueado && _personaAdministrado != null)
+{
+    <h2 style="font-weight: bold">Sección Gestión de Personas</h2>
+
+    if (_altaPersona)
+    {
+        <button @onclick="MostrarDialogoAlta" class="accion">+ Nueva Persona</button>
+        @if (_visibleDialogoAlta)
+        {
+            <div class="dialogo-contenedor">
+                <div class="dialogo-contenido">
+                    <div class="background-blur"></div>
+                    <div class="login-caja">
+                        <input type="text" placeholder="Nombre" @bind="_personaAdministrado.Nombre"/>
+                        <input type="text" placeholder="Apellido" @bind="_personaAdministrado.Apellido"/>
+                        <input type="email" placeholder="Email" @bind="_personaAdministrado.Email"/>
+                        <input type="text" placeholder="Telefono" @bind="_personaAdministrado.Telefono"/>
+                        <input type="text" placeholder="Dni" @bind="_personaAdministrado.Dni"/>
+                        <button @onclick="AltaPersona">Aceptar</button>
+                        <button @onclick="CerrarDialogoAlta">Cancelar</button>
+                    </div>
+                @if (_alertVisible)
+                {
+                    <p style="margin-top: 15px; font-size: small" class="alert-danger">@_alertText</p>
+                }
+                </div>
+            </div>
+        }
+    }
+        <table class="tabla-personas">
+            <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Email</th>
+                <th>Telefono</th>
+                <th>Dni</th>
+                <th>Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (_listaPersonas != null)
+            {
+                foreach (var p in _listaPersonas)
+                {
+                    <tr>
+                        <td>@p.Nombre</td>
+                        <td>@p.Apellido</td>
+                        <td>@p.Email</td>
+                        <td>@p.Telefono</td>
+                        <td>@p.Dni</td>
+                        <td class="columna-accion">
+                            @if (_personaModificacion)
+                            {
+                                <button @onclick="@(() => MostrarDialogoMod(p.Id))" style="margin-right: 20px" class="accion">Modificar</button>
+                                if (_idPersonaAMod == p.Id)
+                                {
+                                    <div class="dialogo-contenedor">
+                                        <div class="dialogo-contenido">
+                                            <p>Nombre</p>
+                                            <input type="text" @bind="_personaAdministrado.Nombre"/>
+                                            <p>Apellido</p>
+                                            <input type="text" @bind="_personaAdministrado.Apellido"/>
+                                            <p>Email</p>
+                                            <input type="text" @bind="_personaAdministrado.Email"/>
+                                            <p>Telefono</p>
+                                            <input type="text" @bind="_personaAdministrado.Telefono"/>
+                                            <p>Dni</p>
+                                            <input type="text" @bind="_personaAdministrado.Dni"/>
+
+                                            <button @onclick="@(() => ModificarPersona(_personaAdministrado))">Aceptar</button>
+                                            <button @onclick="CerrarDialogoMod">Cancelar</button>
+                                        </div>
+                                        @if (_alertVisible)
+                                        {
+                                            <p style="margin-top: 15px; font-size: small" class="alert-danger">@_alertText</p>
+                                        }
+                                    </div>
+                                }
+                            }
+                            @if (_bajaPersona)
+                            {
+                                <button @onclick="@(() => MostrarDialogoBaja(p.Id))" style="margin-right: 20px; background-color: darkred" class="accion">Eliminar</button>
+                                if (_idPersonaAEliminar == p.Id)
+                                {
+                                    <div class="dialogo-contenedor">
+                                        <div class="dialogo-contenido">
+                                            <h3 class="baja-h3">¿Estás seguro de eliminar a la persona @p.Nombre @p.Apellido?</h3>
+                                            <button class="baja-button" @onclick="@(() => BajaPersona(p.Id))">Aceptar</button>
+                                            <button class="baja-button" @onclick="CerrarDialogoBaja">Cancelar</button>
+
+                                            @if (_alertVisible)
+                                            {
+                                                <p style="margin-top: 15px; font-size: small" class="alert-danger">@_alertText</p>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+
+                        </td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+}
+else
+{
+    <div class="container">
+        <h1 class="alert-danger">Error.</h1>
+        <code style="color: black">No posees autenticación o los permisos necesarios para acceder a esta sección.</code>
+    </div>
+}
+
+@code {
+    private bool _logueado;
+
+    private bool _mostrarFormulario;
+    private Persona? _nuevaPersona = new();
+    private Persona _personaActual = new();
+    private Persona? _personaAdministrado;
+
+    private void GuardarPersona()
+    {
+        if (_nuevaPersona != null) AltaPersonaUseCase.Ejecutar(_nuevaPersona, _nuevaPersona.Id);
+        _mostrarFormulario = false;
+    }
+    private bool _isUserAdmin;
+    private bool _altaPersona;
+    private bool _bajaPersona;
+    private bool _personaModificacion;
+    IOrderedEnumerable<Persona>? _listaPersonas;
+    private bool _visibleDialogoAlta;
+    private bool _alertVisible;
+    private int? _idPersonaAEliminar;
+    private String _alertText = "";
+    private Usuario? _usuarioActual;
+    private int? _idPersonaAMod;
+
+    protected override void OnInitialized()
+    {
+        _usuarioActual = Sesion.GetSesion();
+        _logueado = Sesion.HaySesion();
+        _isUserAdmin=_usuarioActual?.Permisos.Exists(p => p.Equals(Permiso.PersonaBaja) || p.Equals(Permiso.PersonaAlta) || p.Equals(Permiso.PersonaModificacion)) ?? false;
+
+        _altaPersona = _usuarioActual?.Permisos.Contains(Permiso.PersonaAlta) ?? false;
+        _personaModificacion = _usuarioActual?.Permisos.Contains(Permiso.PersonaModificacion) ?? false;
+        _bajaPersona = _usuarioActual?.Permisos.Contains(Permiso.PersonaBaja) ?? false;
+
+        var personas = ListarPersonas?.Ejecutar() ?? new List<Persona>();
+        _listaPersonas = personas.OrderBy(p => p.Nombre);
+
+        _personaAdministrado = new Persona();
+    }
+
+    void MostrarDialogoAlta()
+    {
+        _alertVisible = false;
+        _visibleDialogoAlta = true;
+        StateHasChanged();
+    }
+
+    void CerrarDialogoAlta()
+    {
+        _alertVisible = false;
+        _visibleDialogoAlta = false;
+        _listaPersonas = RepositorioPersona.ListarPersonas().OrderBy(a => a.Nombre);
+        _personaAdministrado = new Persona();
+        StateHasChanged();
+    }
+
+    void AltaPersona()
+    {
+        try
+        {
+            if (_usuarioActual != null)
+                AltaPersonaUseCase.Ejecutar(_personaAdministrado, _usuarioActual.Id);
+            CerrarDialogoAlta();
+            StateHasChanged();
+
+        }
+        catch (Exception e)
+        {
+            _alertText = e.Message;
+            _alertVisible = true;
+        }
+    }
+
+        void MostrarDialogoBaja(int personaId)
+        {
+            _alertVisible = false;
+            _idPersonaAEliminar = personaId;
+            StateHasChanged();
+        }
+    
+        void CerrarDialogoBaja()
+        {
+            _alertVisible = false;
+            _idPersonaAEliminar = null;
+            _listaPersonas = RepositorioPersona.ListarPersonas().OrderBy(a => a.Nombre);
+            StateHasChanged();
+        }
+    
+        void BajaPersona(int uId)
+        {
+            try
+            {
+                if (_usuarioActual != null)
+                    BajaPersonaUseCase.Ejecutar(uId, _usuarioActual.Id);
+                CerrarDialogoBaja();
+                StateHasChanged();
+            } catch (Exception e)
+            {
+                _alertText = e.Message;
+                _alertVisible = true;
+            }
+        }
+    
+        void MostrarDialogoMod(int personaId)
+        {
+            _alertVisible = false;
+            _idPersonaAMod = personaId;
+
+            if (_listaPersonas != null)
+            {
+                var personaOriginal = _listaPersonas.FirstOrDefault(p => p.Id == personaId);
+                if (personaOriginal != null)
+                {
+                    _personaAdministrado = new Persona
+                    {
+                        Id = personaOriginal.Id,
+                        Nombre = personaOriginal.Nombre,
+                        Apellido = personaOriginal.Apellido,
+                        Email = personaOriginal.Email,
+                    };
+                }
+            }
+
+            StateHasChanged();
+        }
+    
+        void CerrarDialogoMod()
+        {
+            _alertVisible = false;
+            _idPersonaAMod = null;
+            _listaPersonas = RepositorioPersona.ListarPersonas().OrderBy(a => a.Nombre);
+            StateHasChanged();
+        }
+    
+        void CambiarPermiso(Usuario u, Permiso permiso, bool estaMarcado)
+        {
+            if (estaMarcado)
+            {
+                if (!u.Permisos.Contains(permiso))
+                    u.Permisos.Add(permiso);
+            }
+            else
+            {
+                if (u.Permisos.Contains(permiso))
+                    u.Permisos.Remove(permiso);
+            }
+        }
+    
+        void ModificarPersona(Persona? p)
+        {
+            try
+            {
+                if (_usuarioActual != null)
+                    ModPersona.Ejecutar(p, _usuarioActual.Id);
+                CerrarDialogoMod();
+                StateHasChanged();
+            } catch (Exception e)
+            {
+                _alertText = e.Message;
+                _alertVisible = true;
+            }
+        }
+    }

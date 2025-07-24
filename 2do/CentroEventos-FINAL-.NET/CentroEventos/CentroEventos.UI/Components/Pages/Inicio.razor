@@ -1,0 +1,65 @@
+﻿@page "/inicio"
+@using CentroEventos.Aplicacion.Enums
+@using CentroEventos.Aplicacion.UseCases.Especiales
+@rendermode InteractiveServer
+@inject IServicioSesion Sesion;
+@inject NavigationManager NavigationManager
+@inject IRepositorioEventoDeportivo RepoE
+@inject IRepositorioReserva RepoR
+@inject IRepositorioPersona RepoP
+@inject IRepositorioUsuario RepoU
+@inject ListarEventosConCupoDisponibleUseCase ListarEventosCupoDisp;
+
+<PageTitle>CentroEventos | Inicio</PageTitle>
+
+@if (_logueado)
+{
+    <h2 style="font-weight: bold">Bienvenido, @Sesion.GetSesion()?.Nombre</h2>
+    @if (_isUserAdmin)
+    {
+        <div>
+            <p>Usted posee permisos para administrar usuarios</p>
+            <button class="boton-user" @onclick="IrAUsuarios">
+                <img width="20" style="margin-right: 15px" src="users-solid.svg" alt=""/>
+                Gestionar usuarios
+            </button>
+        </div>
+    }
+    <br/>
+    <h3 style="font-style: italic; font-weight: bold">Centro de Eventos Deportivos - Resumen</h3>
+    <ul>
+    <li> Cantidad de Personas: @RepoP.ListarPersonas().Count</li>
+    <li> Cantidad de Eventos Deportivos: @RepoE.ListarEventos().Count</li>
+    <li style="list-style-type: none">∟ Eventos Deportivos con cupo disponible: @ListarEventosCupoDisp.Ejecutar().Count</li>
+    <li style="list-style-type: none">∟ Eventos Deportivos futuros: @RepoE.ListarEventosFuturos().Count</li>
+    <li>Cantidad de Reservas: @RepoR.ListarReservas().Count</li>
+    @if (_isUserAdmin)
+    {
+        <li> Cantidad de Usuarios: @RepoU.ListarUsuarios().Count</li>
+    }
+    </ul>
+}
+else
+{
+    <div class="container">
+        <h1 class="alert-danger">Error.</h1>
+        <code style="color: black">No posees autenticación o los permisos necesarios para acceder a esta sección.</code>
+    </div>
+}
+
+@code {
+    private bool _logueado;
+    private bool _isUserAdmin;
+
+    protected override void OnInitialized()
+    {
+        _logueado = Sesion.HaySesion();
+        _isUserAdmin = Sesion.GetSesion()?.Permisos.Exists(p => p.Equals(Permiso.UsuarioAlta) || p.Equals(Permiso.UsuarioBaja) || p.Equals(Permiso.UsuarioModificacion)) ?? false;
+    }
+
+    void IrAUsuarios()
+    {
+        StateHasChanged();
+        NavigationManager.NavigateTo("/usuarios");
+    }
+}

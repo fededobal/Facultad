@@ -1,0 +1,286 @@
+﻿
+@using CentroEventos.Aplicacion.Enums
+@using CentroEventos.Aplicacion.UseCases.Evento
+@using CentroEventos.Aplicacion.UseCases.Persona
+@using CentroEventos.Aplicacion.UseCases.Reserva
+@rendermode InteractiveServer
+
+@inject IRepositorioReserva RepoReserva
+@inject IServicioSesion Sesion;
+@inject ReservaAltaUseCase ReservaAlta
+@inject ReservaBajaUseCase ReservaBaja
+@inject ReservaModificarUseCase ReservaModificar
+
+@inject EventoListarUseCase ListarEventos
+@inject ListarPersonasUseCase ListarPersonas
+
+
+@page "/reservas"
+    
+
+<PageTitle>CentroEventos | Reservas </PageTitle>
+
+@if (_logueado && _reservaAdministrada != null)
+{
+    <h2 style="font-weight: bold">Sección Gestión de Reserva</h2>
+    if (_reservaAlta)
+    {
+        <button @onclick="MostrarDialogoAlta" class="accion">+ Nueva Reserva</button>
+        @if (_visibleDialogoAlta)
+        {
+            <div class="dialogo-contenedor">
+                <div class="dialogo-contenido">
+                    <div class="background-blur"></div>
+                    <div class="login-caja">
+                        <select @bind="_reservaAdministrada.PersonaId">
+                            <option value="0" disabled selected>-- Seleccioná una persona--</option>
+                            @foreach (var persona in ListarPersonas.Ejecutar())
+                            {
+                                <option value="@persona.Id">@($"{persona.Nombre} {persona.Apellido}")</option>
+                            }
+                            </select>
+                        <select @bind="_reservaAdministrada.EventoDeportivoId">
+                            <option value="0" disabled selected> -- Seleccioná un Evento --</option>
+                            @foreach (var evento in ListarEventos.Ejecutar())
+                            {
+                                <option value="@evento.Id">@($"{evento.Nombre}")</option>
+                            }   
+                        </select>
+                        <button @onclick="AltaReserva">Aceptar</button>
+                        <button @onclick="CerrarDialogoAlta">Cancelar</button>
+                    </div>
+                @if (_alertVisible)
+                {
+                    <p style="margin-top: 15px; font-size: small" class="alert-danger">@_alertText</p>
+                }
+                </div>
+            </div>
+        }
+    }
+        <table class="tabla-eventos">
+            <thead>
+            <tr>
+                <th>    PersonaId   </th>
+                <th>    EventoDeportivo </th>
+                <th>    FechaAltaReserva    </th>
+                <th>    Estado Asistencia   </th>
+                <th>Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (_listaReserva != null)
+            {
+                foreach (var u in _listaReserva)
+                {
+                    <tr>
+                        <td>@u.PersonaId</td>
+                        <td>@u.EventoDeportivoId</td>
+                        <td>@u.FechaAltaReserva</td>
+                        <td>@u.EstadoAsistencia</td>
+                        <td class="columna-accion">
+                            @if (_reservaModificacion)
+                            {
+                                <button @onclick="@(() => MostrarDialogoMod(u.Id))" style="margin-right: 20px" class="accion">Modificar</button>
+                                if (_idReservaAMod == u.Id)
+                                {
+                                    <div class="dialogo-contenedor">
+                                        <div class="dialogo-contenido">
+                                            <p>Id persona</p>
+                                            <input type="text" @bind="u.PersonaId"/>
+                                            <p>EventoDeportivo Id</p>
+                                            <input type="text" @bind="u.EventoDeportivoId"/>
+                                            <p>FechaAltaReserva </p>
+                                            <input type="text" @bind="u.FechaAltaReserva"/>
+                                            <p>Estado Reserva </p>
+                                            <select @bind="_valueTemp">
+                                                <option value="0" disabled selected> -- Estado Asistencia --</option>
+                                                @foreach (var asistencia in Enum.GetValues(typeof(Asistencia)))
+                                                {
+                                                    <option value="@asistencia">@asistencia</option>
+                                                }
+                                            </select>
+                                            <button @onclick="@(() => ModificarReserva(u))">Aceptar</button>
+                                            <button @onclick="CerrarDialogoMod">Cancelar</button>
+                                            @if (_alertVisible)
+                                            {
+                                                <p style="margin-top: 15px; font-size: small" class="alert-danger">@_alertText</p>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            @if (_reservaBaja)
+                            {
+                                <button @onclick="@(() => MostrarDialogoBaja(u.Id))" style="margin-right: 20px; background-color: darkred" class="accion">Eliminar</button>
+                                if (_idReservaAEliminar == u.Id)
+                                {
+                                    <div class="dialogo-contenedor">
+                                        <div class="dialogo-contenido">
+                                            <h3 class="baja-h3">¿Estás seguro desea eliminar la reserva @u.Id </h3>
+                                            <button class="baja-button" @onclick="@(() => BajaReserva(u.Id))">Aceptar</button>
+                                            <button class="baja-button" @onclick="CerrarDialogoBaja">Cancelar</button>
+
+                                            @if (_alertVisible)/*Statement​End*/
+                                            {
+                                            }
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+
+                        </td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+}
+else
+{
+    <div class="container">
+        <h1 class="alert-danger">Error.</h1>
+        <code style="color: black">No posees autenticación o los permisos necesarios para acceder a esta sección.</code>
+    </div>
+}
+
+@code {
+    private bool _logueado;
+    private bool _isUserAdmin;  //admin
+    private bool _reservaAlta;  //
+    private bool _reservaBaja;
+    private bool _reservaModificacion;
+    IOrderedEnumerable<Reserva>? _listaReserva;
+    private Reserva? _reservaAdministrada = new Reserva ();
+    private bool _visibleDialogoAlta;
+    private bool _alertVisible;
+    private String _alertText = "";
+    private int? _idReservaAEliminar;
+    private Usuario? _usuarioActual;
+    private int? _idReservaAMod;
+
+    private Asistencia _valueTemp;
+
+    protected override void OnInitialized()
+    {
+        _usuarioActual = Sesion.GetSesion();
+        _logueado = Sesion.HaySesion();
+        _isUserAdmin = _usuarioActual?.Permisos.Exists(p => p.Equals(Permiso.ReservaAlta) || p.Equals(Permiso.ReservaBaja) || p.Equals(Permiso.ReservaModificacion)) ?? false;
+        _reservaAlta = _usuarioActual?.Permisos.Exists(p => p.Equals(Permiso.UsuarioAlta)) ?? false;
+        _reservaModificacion = _usuarioActual?.Permisos.Exists(p => p.Equals(Permiso.UsuarioModificacion)) ?? false;
+        _reservaBaja = _usuarioActual?.Permisos.Exists(p => p.Equals(Permiso.UsuarioBaja)) ?? false;
+        _listaReserva = RepoReserva.ListarReservas().OrderBy(a => a.Id);
+        _reservaAdministrada = new Reserva();
+    }
+    void MostrarDialogoAlta()
+    {
+        _alertVisible = false;
+        _visibleDialogoAlta = true;
+        StateHasChanged();
+    }
+    void CerrarDialogoAlta()
+    {
+        _alertVisible = false;
+        _visibleDialogoAlta = false;
+        _listaReserva = RepoReserva.ListarReservas().OrderBy(a => a.Id);
+        _reservaAdministrada = new Reserva();
+        StateHasChanged();
+    }
+    void AltaReserva()
+    {
+        try
+        {
+            if (_reservaAdministrada != null)
+            {
+                _reservaAdministrada.FechaAltaReserva = DateTime.Now;
+                _reservaAdministrada.EstadoAsistencia = Asistencia.Pendiente;
+                if (_reservaAdministrada != null)
+                    if (_usuarioActual != null)
+                        ReservaAlta.Ejecutar(_reservaAdministrada, _usuarioActual.Id);
+            }
+
+            CerrarDialogoAlta();
+            StateHasChanged();
+
+        }
+        catch (Exception e)
+        {
+            _alertText = e.Message;
+            _alertVisible = true;
+        }
+    }
+
+    void MostrarDialogoBaja(int reservaId)
+    {
+        _alertVisible = false;
+        _idReservaAEliminar = reservaId;
+        StateHasChanged();
+    }
+    void CerrarDialogoBaja()
+    {
+        _alertVisible = false;
+        _idReservaAEliminar = null;
+        _listaReserva = RepoReserva.ListarReservas().OrderBy(a => a.Id);
+        StateHasChanged();
+    }
+    void BajaReserva(int uId)
+    {
+        try
+        {
+            if (_usuarioActual != null)
+                ReservaBaja.Ejecutar(uId, _usuarioActual.Id);
+            CerrarDialogoBaja();
+            StateHasChanged();
+        } catch (Exception e)
+        {
+            _alertText = e.Message;
+            _alertVisible = true;
+        }
+    }
+    
+    void MostrarDialogoMod(int reservaId)
+    {
+        _alertVisible = false;
+        _idReservaAMod = reservaId;
+
+        var reservaOriginal = _listaReserva?.FirstOrDefault(u => u.Id == reservaId);
+        if (reservaOriginal != null)
+        {
+            _reservaAdministrada = new Reserva
+            {
+                Id = reservaOriginal.Id,
+                PersonaId = reservaOriginal.Id,
+                EventoDeportivoId = reservaOriginal.EventoDeportivoId,
+                FechaAltaReserva = reservaOriginal.FechaAltaReserva,
+                EstadoAsistencia = reservaOriginal.EstadoAsistencia,
+            };
+        }
+
+        StateHasChanged();
+    }
+    
+    void CerrarDialogoMod()
+    {
+        _alertVisible = false;
+        _idReservaAMod = null;
+        _listaReserva = RepoReserva.ListarReservas().OrderBy(a => a.Id);
+        StateHasChanged();
+    }
+
+    void ModificarReserva(Reserva u)
+    {
+        try
+        {
+            if (_usuarioActual != null){
+                u.EstadoAsistencia=_valueTemp;
+                ReservaModificar.Ejecutar(u,_usuarioActual.Id);
+                }
+            CerrarDialogoMod();
+            StateHasChanged();
+        } catch (Exception e)
+        {
+            _alertText = e.Message;
+            _alertVisible = true;
+        }
+    }
+}

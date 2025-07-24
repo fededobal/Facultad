@@ -1,0 +1,49 @@
+﻿@page "/Error"
+@using System.Diagnostics
+@inject NavigationManager NavigationManager
+
+<PageTitle>Error</PageTitle>
+
+<div class="container">
+    <h1 class="text-danger">Error.</h1>
+    <h2 class="text-danger">An error occurred while processing your request.</h2>
+</div>
+
+    @if (ShowRequestId)
+    {
+        <div class="container">
+            <p>
+                <strong>Request ID:</strong> <code>@RequestId</code>
+            </p>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="container">
+            <p>@ErrorMessage</p>
+        </div>
+    }
+    
+    <div class="container">
+        <a href="/">Volver atrás</a>
+    </div>
+
+@code{
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+    private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    [Parameter]
+    public string? ErrorMessage { get; set; }
+
+    protected override void OnInitialized()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query).TryGetValue("message", out var message))
+            ErrorMessage = message.FirstOrDefault();
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+    }
+}

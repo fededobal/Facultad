@@ -1,0 +1,70 @@
+.dialogo-contenedor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #00002e;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dialogo-contenido {
+    background-color: white;
+    padding: 60px 60px 60px 0;
+    border: 1px solid #dbdbdb;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    align-items: center;
+    display:flex;
+    flex-direction: row;
+    gap: 50px;
+}
+
+.main-layout {
+    background-color: white;
+    min-height: 100vh;
+}
+
+.logo-caja {
+    display: flex;
+    flex-direction: column;
+    width: 500px;
+}
+
+.login-caja {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 300px;
+}
+
+.login-caja input {
+    padding: 10px;
+    font-size: 16px;
+    border: 0.1px solid #bbb;
+    border-radius: 5px;
+}
+
+.login-caja button {
+    padding: 10px;
+    background-color: #0078d4;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.login-caja button:hover {
+    background-color: #005ea1;
+}
+
+.login-caja .signup {
+    background-color: #999;
+}
+
+.login-caja .signup:hover {
+    background-color: #666;
+}

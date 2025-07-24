@@ -1,0 +1,75 @@
+@using CentroEventos.Aplicacion.Services
+@using CentroEventos.Aplicacion.Services.ServicioSesion
+@inject Sesion Sesion;
+@inject ServicioAutorizacion ServicioAutorizacion;
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a style="font-weight: bolder; font-size: larger" class="navbar-brand" href="/inicio">
+            <img width="40" src="logo-removebg-preview.png" alt=""/>
+            CentroEventos
+        </a>
+    </div>
+    </div>
+<input type="checkbox" title="Navigation menu" class="navbar-toggler"/>
+
+    <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+        <nav class="flex-column">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="inicio" Match="NavLinkMatch.All">
+                    <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Inicio
+                </NavLink>
+            </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="eventosDeportivos">
+                <img width="20" style="margin-right: 15px" src="medal-solid.svg" alt=""/>
+                <span aria-hidden="true"></span> Eventos Deportivos
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="personas">
+                <img width="20" style="margin-right: 15px" src="person-walking-solid.svg" alt=""/>
+                <span aria-hidden="true"></span> Personas
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="reservas">
+                <img width="20" style="margin-right: 15px" src="book-solid.svg" alt=""/>
+                <span aria-hidden="true"></span> Reservas
+            </NavLink>
+        </div>
+    </nav>
+    <hr style="border: 2px solid white">
+        <div style="" class="nav-item px-3">
+            <button style="color: white" class="nav-link" @onclick="IrAPerfil">
+                <img width="20" style="margin-right: 15px" src="user-solid.svg" alt=""/>
+                Mi Perfil
+            </button>
+        </div>
+        <div style="" class="nav-item px-3">
+            <button style="color: white" class="nav-link" @onclick="LogOut">
+                <img width="20" style="margin-right: 15px" src="right-from-bracket-solid.svg" alt=""/>
+                Cerrar sesión
+            </button>
+        </div>
+</div>
+
+@code {
+
+    void LogOut()
+    {
+        Sesion.CerrarSesion();
+        NavigationManager.NavigateTo("/",true);
+        StateHasChanged();
+    }
+
+    private void IrAPerfil()
+    {
+        NavigationManager.NavigateTo("/perfil");
+    }
+
+}

@@ -1,0 +1,121 @@
+@page "/"
+@using CentroEventos.Aplicacion.Services.ServicioSesion
+@using CentroEventos.Aplicacion.UseCases.Usuario
+@using CentroEventos.Aplicacion.Validators.Usuario
+@rendermode InteractiveServer
+@inject UsuarioAltaUseCase UsuarioAltaUseCase;
+@inject UsuarioAltaCampos UsuarioAltaCampos;
+@inject InicioSesion InicioSesion
+@inject NavigationManager NavigationManager
+
+@* A la hora de ocultar el NavBar para los usuarios no ingresados, nos topamos con que el mismo NavBar forma parte
+del Layout global y el mismo se inicializa a la hora de ejecutar la Solución. Para que, de todas formas, ningún usuario
+no autenticado o sin los permisos requeridos pudiera acceder a páginas que deberían ser inalcanzables para ellos,
+nos arreglamos con los @if. Entonces, si no se tiene el permiso o autenticación necesarios, se muestra un error. *@
+
+@if (_loginVisible)
+{
+    <div class="dialogo-contenedor">
+        <div class="dialogo-contenido">
+            <div class="background-blur"></div>
+            <div class="logo-caja">
+                <img src="logo.png"/>
+            </div>
+            <div class="login-caja">
+                <h1 style="font-weight: bold">¡Bienvenido!</h1>
+                <h2>Iniciar sesión</h2>
+                <input type="email" placeholder="Email" @bind="_usuarioActual.Email"/>
+                <input type="password" placeholder="Contraseña" @bind="_usuarioActual.Contraseña"/>
+                <button @onclick="IniciarSesion">Ingresar</button>
+                <button class="signup" @onclick="c => ShowLogin(false)">¿Todavía sin un usuario? Registrarse</button>
+                <a style="color: red; text-decoration: none" href="mailto:admin@centroeventos.com.ar">¿Has olvidado tu contraseña?</a>
+            </div>
+        </div>
+    </div>
+}
+@if (_signupVisible)
+{
+    <div class="dialogo-contenedor">
+        <div class="dialogo-contenido">
+            <div class="background-blur"></div>
+            <div class="logo-caja">
+                <img src="logo.png"/>
+            </div>
+            <div class="login-caja">
+                <h2>Registro</h2>
+                <input type="text" placeholder="Nombre" @bind="_usuarioActual.Nombre"/>
+                <input type="text" placeholder="Apellido" @bind="_usuarioActual.Apellido"/>
+                <input type="email" placeholder="Email" @bind="_usuarioActual.Email"/>
+                <input type="password" placeholder="Contraseña" @bind="_usuarioActual.Contraseña"/>
+                <button @onclick="Registrarse">Registrarse</button>
+                <button class="signup" @onclick="c => ShowLogin(true)">Volver atrás</button>
+            </div>
+        </div>
+    </div>
+}
+
+<Modal @ref="_modal" Title=@_tituloModal>
+    <FooterTemplate>
+        <button class="btn btn-primary" @onclick="OnHideModalClick">Aceptar</button>
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Usuario _usuarioActual = new();
+    
+    private bool _loginVisible = true;
+    private bool _signupVisible;
+    private string _tituloModal = "";
+
+    void ShowLogin(bool esLogin)
+    {
+        _usuarioActual = new Usuario(); 
+        _loginVisible = esLogin;
+        _signupVisible = !esLogin;
+    }
+    
+    async void IniciarSesion() // async por el Modal, no por otra cosa
+    {
+        try
+        {
+            InicioSesion.Ejecutar(_usuarioActual);
+            NavigationManager.NavigateTo("/inicio");
+            StateHasChanged();
+        }
+        catch (Exception e)
+        {
+            _tituloModal = "Error al iniciar sesión.";
+            _modal.BodyTemplate = e.Message;
+            await OnShowModalClick();
+            StateHasChanged();
+        }
+    }
+    
+    async void Registrarse() // async por el Modal, no por otra cosa
+    {
+        try
+        {
+            UsuarioAltaUseCase.Ejecutar(_usuarioActual,UsuarioAltaCampos);
+            _usuarioActual = new Usuario();
+        }
+        catch (Exception e)
+        {
+            _tituloModal = "Error al registrarse.";
+            _modal.BodyTemplate = e.Message;
+            await OnShowModalClick();
+            StateHasChanged();
+        }
+    }
+    
+    private Modal _modal = default!;
+
+    private async Task OnShowModalClick()
+    {
+        await _modal.ShowAsync();
+    }
+
+    private async Task OnHideModalClick()
+    {
+        await _modal.HideAsync();
+    }
+}

@@ -1,0 +1,75 @@
+﻿@page "/perfil"
+@inject IServicioSesion Sesion
+@using CentroEventos.Aplicacion.Enums
+@using CentroEventos.Aplicacion.UseCases.Usuario
+@inject UsuarioModificarUseCase UserMod
+@rendermode InteractiveServer
+
+@if (_logueado && _usuarioActual != null)
+{
+    <div class="dialogo-contenedor">
+        <div class="dialogo-contenido">
+            <h3>Perfil</h3>
+            <p>Nombre</p>
+            <input type="text" @bind="_usuarioActual.Nombre"/>
+            <p>Apellido</p>
+            <input type="text" @bind="_usuarioActual.Apellido"/>
+            <p>Contraseña</p>
+            <input type="text" @bind="_usuarioActual.Contraseña"/>
+            <p>Email</p>
+            <input type="text" @bind="_usuarioActual.Email"/>
+            <button @onclick="@(() => ModificarUsuario(_usuarioActual))">Aceptar</button>
+            @if (_alertDangerVisible)
+            {
+                <p style="margin-top: 15px; font-size: small" class="alert-danger">@_alertText</p>
+            }
+            @if (_alertSuccessVisible)
+            {
+                <p style="margin-top: 15px; font-size: small" class="alert-success">@_alertText</p>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="container">
+        <h1 style="font-size: small" class="alert-danger">Error.</h1>
+        <code style="color: black">No posees autenticación o los permisos necesarios para acceder a esta sección.</code>
+    </div>
+}
+
+@code {
+    private bool _logueado;
+    private bool _alertDangerVisible;
+    private String _alertText = "";
+    private Usuario? _usuarioActual;
+    private bool _alertSuccessVisible;
+
+    protected override void OnInitialized()
+    {
+        _logueado = Sesion.HaySesion();
+        _usuarioActual = Sesion.GetSesion();
+        if (_usuarioActual != null)
+            _usuarioActual.Contraseña = "";
+    }
+
+    void ModificarUsuario(Usuario u)
+    {
+        try
+        {
+            if (_usuarioActual != null)
+            {
+                _usuarioActual.Permisos.Add(Permiso.UsuarioModificacion);
+                UserMod.Ejecutar(u, _usuarioActual);
+                _usuarioActual.Permisos.Remove(Permiso.UsuarioModificacion);
+            }
+            _alertSuccessVisible = true;
+            _alertText = "Usuario modificado correctamente";
+            StateHasChanged();
+        } catch (Exception e)
+        {
+            _alertText = e.Message;
+            _alertDangerVisible = true;
+        }
+    }
+}

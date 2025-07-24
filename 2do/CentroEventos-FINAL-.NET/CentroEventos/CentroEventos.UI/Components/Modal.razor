@@ -1,0 +1,39 @@
+﻿<div class="modal fade @(_isVisible ? "show d-block" : "")" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5);">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@Title</h5>
+                <button type="button" class="btn-close" @onclick="HideAsync"></button>
+            </div>
+            <div class="modal-body">
+                @BodyTemplate
+            </div>
+            <div class="modal-footer">
+                @FooterTemplate
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _isVisible;
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string Title { get; set; } = "Título";
+    [Parameter] public string? BodyTemplate { get; set; }
+    [Parameter] public RenderFragment? FooterTemplate { get; set; }
+
+    public async Task ShowAsync()
+    {
+        _isVisible = true;
+        StateHasChanged();
+        await Task.CompletedTask;
+    }
+
+    public async Task HideAsync()
+    {
+        _isVisible = false;
+        StateHasChanged();
+        await Task.CompletedTask;
+    }
+}

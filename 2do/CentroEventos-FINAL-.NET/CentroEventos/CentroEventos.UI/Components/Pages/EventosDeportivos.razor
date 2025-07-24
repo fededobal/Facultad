@@ -1,0 +1,341 @@
+﻿@page "/eventosDeportivos"
+@using CentroEventos.Aplicacion.UseCases.Evento;
+@using CentroEventos.Aplicacion.UseCases.Persona;
+@using CentroEventos.Aplicacion.UseCases.Especiales;
+@using CentroEventos.Aplicacion.Enums;
+
+@rendermode InteractiveServer
+@inject EventoAltaUseCase EventoAlta;
+@inject EventoBajaUseCase EventoBaja;
+@inject EventoModificacionUseCase ModificarEvento;
+@inject EventoListarUseCase ListarEventos;
+@inject ListarEventosConCupoDisponibleUseCase ListarEventosCupoDisp;
+@inject ListarAsistenciaAEventoUseCase ListarAsistenciasAEvento;
+@inject ListarPersonasUseCase ListaPersonas;
+@inject IRepositorioReserva RepoReserva;
+@inject IServicioSesion Sesion;
+
+<PageTitle>CentroEventos |  Deportivos</PageTitle>
+
+@if (_logueado && _eventoAdministrado != null)
+{
+    <h2 style="font-weight: bold">Sección Gestión de Eventos Deportivos</h2>
+    if (_eventoAlta)
+    {
+        <button @onclick="MostrarDialogoAlta" class="accion">+ Nuevo Evento</button>
+        @if (_visibleDialogoAlta)
+        {
+            <div class="dialogo-contenedor">    
+                <div class="dialogo-contenido">
+                    <div class="background-blur"></div>
+                    <div class="login-caja">
+                        <input type="text" placeholder="Nombre" @bind="_eventoAdministrado.Nombre"/>
+                        <input type="text" placeholder="Descripción" @bind="_eventoAdministrado.Descripcion"/>
+                        <input type="datetime-local" @bind="_eventoAdministrado.FechaHoraInicio" class="form-control"/>
+                        <input type="integer" placeholder="Duración En Horas" @bind="_eventoAdministrado.DuracionHoras"/>
+                        <input type="integer" placeholder="Cupo Máximo" @bind="_eventoAdministrado.CupoMaximo"/>
+                        <select @bind="_eventoAdministrado.ResponsableId">
+                            <option value="0" disabled selected>-- Seleccioná un responsable --</option>
+                            @foreach (var persona in ListaPersonas.Ejecutar())
+                            {
+                                <option value="@persona.Id">@($"{persona.Nombre} {persona.Apellido}")</option>
+                            }
+                        </select>
+                        <button @onclick="AltaEvento">Aceptar</button>
+                        <button @onclick="CerrarDialogoAlta">Cancelar</button>
+                    </div>
+                @if (_alertVisible)
+                {
+                    <p style="margin-top: 15px; font-size: small" class="alert-danger">@_alertText</p>
+                }
+                </div>
+            </div>
+        }
+    }
+        <table class="tabla-eventos">
+            <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Fecha y Hora de Inicio</th>
+                <th>Duración En Horas</th>
+                <th>Cupos Disponibles</th>
+                <th>Id del Responsable</th>
+                <th>Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var e in listaEventos)
+            {
+                <tr>
+                    <td>@e.Nombre</td>
+                    <td>@e.Descripcion</td>
+                    <td>@e.FechaHoraInicio</td>
+                    <td>@e.DuracionHoras</td>
+                    <td>@e.CupoMaximo</td>
+                    <td>@e.ResponsableId</td>
+                    <td class="columna-accion">
+                        @if (_eventoModificacion)
+                        {
+                            <button @onclick="@(() => MostrarDialogoMod(e.Id))" style="margin-right: 20px" class="accion">Modificar</button>
+                            @if (_idEventoAMod == e.Id)
+                            {
+                                <div class="dialogo-contenedor">
+                                    <div class="dialogo-contenido">
+                                        <p>Nombre</p>
+                                        <input type="text" placeholder="@e.Nombre" @bind="e.Nombre"/>
+                                        <p>Descripción</p>
+                                        <input type="text" placeholder="@e.Descripcion" @bind="e.Descripcion"/>
+                                        <p>Fecha y Hora de Inicio</p>
+                                         <input type="datetime-local" @bind="e.FechaHoraInicio" class="form-control"/>
+                                        <p>Duración en Horas</p>
+                                        <input type="text" placeholder="@e.DuracionHoras" @bind="e.DuracionHoras"/>
+                                        <p>Cupo Máximo</p>
+                                        <input type="text" placeholder="@e.CupoMaximo" @bind="e.CupoMaximo"/>
+                                        <p>Id del Responsable</p>
+                                        <select @bind="e.ResponsableId">
+                                        <option value="0" disabled selected>-- Seleccioná un responsable --</option>
+                                        @foreach (var persona in ListaPersonas.Ejecutar())
+                                        {
+                                        <option value="@persona.Id">@($"{persona.Nombre} {persona.Apellido}")</option>
+                                        }
+                                        </select>
+                                        <button @onclick="@(() => ModificarUnEvento(e))">Aceptar</button>
+                                        <button @onclick="CerrarDialogoMod">Cancelar</button>
+                                        @if (_alertVisible)
+                                        {
+                                            <p style="margin-top: 15px; font-size: small" class="alert-danger">@_alertText</p>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                        @if (_eventoBaja)
+                        {
+                            <button @onclick="@(() => MostrarDialogoBaja(e.Id))" style="margin-right: 20px; background-color: darkred" class="accion">Eliminar</button>
+                            @if (_idEventoAEliminar == e.Id)
+                            {
+                                <div class="dialogo-contenedor">
+                                    <div class="dialogo-contenido">
+                                        <h3 class="baja-h3">¿Estás seguro de eliminar al evento @e.Nombre @e.Descripcion?</h3>
+                                        <button class="baja-button" @onclick="@(() => BajaEvento(e.Id))">Aceptar</button>
+                                        <button class="baja-button" @onclick="CerrarDialogoBaja">Cancelar</button>
+
+                                        @if (_alertVisible)
+                                        {
+                                            <p style="margin-top: 15px; font-size: small" class="alert-danger">@_alertText</p>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        <button class="accion" @onclick="MostrarEventosConCupo" style="margin-top: 1rem;">Ver Eventos con Cupo Disponible</button>
+        @if (_mostrarEventosCupo)
+        {
+            <h4>Eventos con Cupo Disponible</h4>
+            <table class="tabla-eventos">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Fecha</th>
+                    <th>Cupos Restantes</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+        @foreach (var ev in _eventosConCupo)
+        {
+            <tr>
+                <td>@ev.Nombre</td>
+                <td>@ev.FechaHoraInicio.ToString("g")</td>
+                <td>@(ev.CupoMaximo - RepoReserva.ContarReserva(ev.Id))</td>
+                <td>
+                    <button class="accion" @onclick="@(() => MostrarAsistentes(ev))">Ver Asistentes</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    }
+    @if (_mostrarAsistentes)
+    {
+    <h5 style="margin-top: 1rem;">
+    Asistentes al evento: @_eventoSeleccionado?.Nombre - @_eventoSeleccionado?.Descripcion
+    </h5>
+    @if (_asistentesEvento.Any() == true)
+    {
+        <ul>
+            @foreach (var persona in _asistentesEvento)
+            {
+                <li>@persona.Nombre @persona.Apellido</li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p>No hay asistentes registrados para este evento.</p>
+    }
+    <button class="accion" style="margin-top: 0.5rem;" @onclick="@(() => _mostrarAsistentes = false)">Ocultar</button>
+}
+
+
+
+}
+else
+{
+    <div class="container">
+        <h1 class="alert-danger">Error.</h1>
+        <code style="color: black">No posees autenticación o los permisos necesarios para acceder a esta sección.</code>
+    </div>
+}
+
+
+
+@code {
+    private bool _logueado;
+    private bool _eventoAlta;
+    private bool _eventoBaja;
+    private bool _eventoModificacion;
+    private IOrderedEnumerable<EventoDeportivo>? listaEventos;
+    private EventoDeportivo? _eventoAdministrado;
+    private bool _visibleDialogoAlta;
+    private bool _alertVisible;
+    private String _alertText = "";
+    private int? _idEventoAEliminar;
+    private Usuario? _usuarioActual;
+    private int? _idEventoAMod;
+    private List<EventoDeportivo> _eventosConCupo = new();
+    private List<Persona> _asistentesEvento = new();
+    private bool _mostrarEventosCupo = false;
+    private int _eventoSeleccionadoId = 0;
+    private bool _mostrarAsistentes = false;
+    private EventoDeportivo? _eventoSeleccionado;
+
+    protected override void OnInitialized()
+    {
+        _logueado=Sesion.HaySesion();
+        _usuarioActual=Sesion.GetSesion();
+        _eventoAlta=_usuarioActual?.Permisos.Exists(p=> p.Equals(Permiso.EventoAlta)) ?? false;
+        _eventoBaja=_usuarioActual?.Permisos.Exists(p=> p.Equals(Permiso.EventoBaja)) ?? false;
+        _eventoModificacion=_usuarioActual?.Permisos.Exists(p=> p.Equals(Permiso.EventoModificacion)) ?? false;
+        listaEventos=ListarEventos.Ejecutar().OrderBy(e=> e.Nombre);
+        _eventoAdministrado=new EventoDeportivo();
+    }
+
+    void MostrarDialogoAlta()
+    {
+        _alertVisible=false;
+        _visibleDialogoAlta=true;
+        StateHasChanged();
+    }
+
+    void CerrarDialogoAlta()
+    {
+        _alertVisible=false;
+        _visibleDialogoAlta=false;
+        listaEventos= ListarEventos.Ejecutar().OrderBy(e=> e.Nombre);
+        _eventoAdministrado=new EventoDeportivo();
+        StateHasChanged();
+    }
+
+    void AltaEvento()
+    {
+        try
+        {
+            if (_eventoAdministrado!=null)
+                if (_usuarioActual != null)
+                    EventoAlta.Ejecutar(_eventoAdministrado, _usuarioActual.Id);
+            CerrarDialogoAlta();
+            StateHasChanged();
+        }
+        catch (Exception e)
+        {
+            _alertText=e.Message;
+            _alertVisible=true;
+        }
+       
+    }
+
+    void MostrarDialogoBaja(int eventoId)
+    {
+        _alertVisible=false;
+        _idEventoAEliminar=eventoId;
+        StateHasChanged();
+    }
+
+    void CerrarDialogoBaja()
+    {
+        _alertVisible=false;
+        _idEventoAEliminar=null;
+        listaEventos= ListarEventos.Ejecutar().OrderBy(e=> e.Nombre);
+        StateHasChanged();
+    }
+
+    void BajaEvento(int eventoId)
+    {
+        try
+        {
+            if (_usuarioActual!=null)
+                EventoBaja.Ejecutar(eventoId,_usuarioActual.Id);
+            CerrarDialogoBaja();
+            StateHasChanged();
+        }
+        catch(Exception e)
+        {
+             _alertText = e.Message;
+            _alertVisible = true;
+        }
+    }
+
+    void MostrarDialogoMod(int eventoId)
+    {
+        _alertVisible=false;
+        _idEventoAMod=eventoId;
+        StateHasChanged();
+    }
+
+    void CerrarDialogoMod()
+    {
+        _alertVisible=false;
+        _idEventoAMod=null;
+        StateHasChanged();
+    }
+
+    void ModificarUnEvento(EventoDeportivo evento)
+    {
+        try
+        {
+            if(_usuarioActual!=null)
+                ModificarEvento.Ejecutar(evento,_usuarioActual.Id);
+            CerrarDialogoMod();
+            StateHasChanged();
+        }
+        catch   (Exception e)
+        {
+            _alertText=e.Message;
+            _alertVisible=true;
+        }
+    }
+
+    private void MostrarEventosConCupo()
+    {
+    _eventosConCupo = ListarEventosCupoDisp.Ejecutar();
+    _mostrarEventosCupo = true;
+    _mostrarAsistentes = false;
+    }
+
+    private void MostrarAsistentes(EventoDeportivo evento)
+    {
+    _asistentesEvento = ListarAsistenciasAEvento.Ejecutar(evento);
+    _eventoSeleccionadoId = evento.Id;
+    _eventoSeleccionado=evento;
+    _mostrarAsistentes = true;
+    }
+
+
+}

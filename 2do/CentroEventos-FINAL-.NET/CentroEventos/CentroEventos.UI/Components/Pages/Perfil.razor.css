@@ -1,0 +1,79 @@
+﻿/* ============ PERFIL ============ */
+
+.dialogo-contenedor {
+    display: flex;
+    min-height: 80vh;
+}
+
+.dialogo-contenido {
+    max-width: 400px;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.dialogo-contenido h3 {
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    color: #333;
+    text-align: center;
+}
+
+.dialogo-contenido p {
+    margin: 0.5rem 0 0.2rem;
+    font-weight: 600;
+    color: #444;
+}
+
+.dialogo-contenido input[type="text"] {
+    padding: 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    width: 100%;
+}
+
+.dialogo-contenido input[type="text"]:focus {
+    border-color: #6c63ff;
+    outline: none;
+}
+
+.dialogo-contenido button {
+    background-color: #6c63ff;
+    color: white;
+    border: none;
+    padding: 0.7rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+.dialogo-contenido button:hover {
+    background-color: #4e48b6;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #f5c6cb;
+}
+
+.alert-success {
+    color: #1c721d;
+    background-color: #d8f8d7;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #c6f5ca;
+}
+
+/* Estilo para el contenedor de error */
+.container {
+    text-align: center;
+    padding: 3rem;
+}
